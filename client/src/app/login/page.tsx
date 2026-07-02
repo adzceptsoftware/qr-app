@@ -14,9 +14,9 @@ export default async function LoginPage({
         {/* Logo */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl">
-            🏨
+            📋
           </div>
-          <h1 className="text-2xl font-bold text-white">The Grand Terrace</h1>
+          <h1 className="text-2xl font-bold text-white">QR Digital Menu</h1>
           <p className="mt-1 text-sm text-stone-400">Staff Portal</p>
         </div>
 
