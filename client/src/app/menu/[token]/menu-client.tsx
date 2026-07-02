@@ -8,14 +8,14 @@ import { BottomNav, type NavKey } from "@/components/ui/BottomNav";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { HeroCarousel } from "@/components/ui/HeroCarousel";
 import { RatingBadge } from "@/components/ui/RatingBadge";
-import { CategoryPills } from "@/components/ui/CategoryPills";
-import { MenuItemCard } from "@/components/ui/MenuItemCard";
-import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { ItemDetailSheet } from "@/components/ui/ItemDetailSheet";
 import { FloatingCartButton } from "@/components/ui/FloatingCartButton";
 import { CartSheet } from "@/components/ui/CartSheet";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeftIcon, HeartIcon, StarIcon } from "@/components/ui/icons";
+import { HeartIcon } from "@/components/ui/icons";
+import { HomeScreen } from "./home-screen";
+import { MenuScreen } from "./menu-screen";
+import { FavouritesScreen } from "./favourites-screen";
 
 type CartLine = { menuItemId: string; name: string; price: number; qty: number };
 
@@ -212,144 +212,45 @@ export function MenuClient({
         <HeroCarousel images={restaurant.heroImages} fallbackLabel={restaurant.name} />
       </div>
 
-      {/* ── Home ── */}
       {nav === "home" && (
-        <main className="px-4">
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => openMenu(false)}
-              className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface py-5 text-sm font-semibold text-foreground shadow-sm"
-            >
-              <span className="text-2xl">📋</span>
-              Menu
-            </button>
-            <button
-              onClick={() => openMenu(true)}
-              className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface py-5 text-sm font-semibold text-foreground shadow-sm"
-            >
-              <StarIcon width={22} height={22} className="text-accent" />
-              Today Special
-            </button>
-          </div>
-
-          {allItems.some((i) => i.badge) && (
-            <section className="mt-6">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-bold text-foreground">Today Special</h2>
-                <button onClick={() => openMenu(true)} className="text-xs font-semibold text-accent">
-                  See all
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {allItems
-                  .filter((i) => i.badge)
-                  .slice(0, 4)
-                  .map((item) => (
-                    <MenuItemCard
-                      key={item.id}
-                      name={item.name}
-                      description={item.description}
-                      price={item.price}
-                      imageUrl={item.imageUrl}
-                      qty={cart[item.id]?.qty ?? 0}
-                      liked={liked.has(item.id)}
-                      onOpen={() => setOpenItemId(item.id)}
-                      onToggleLike={() => toggleLike(item.id)}
-                      onIncrement={() => addToCart(item)}
-                      onDecrement={() => decrement(item.id)}
-                    />
-                  ))}
-              </div>
-            </section>
-          )}
-        </main>
+        <HomeScreen
+          allItems={allItems}
+          cart={cart}
+          liked={liked}
+          onOpenMenu={openMenu}
+          onOpenItem={setOpenItemId}
+          onToggleLike={toggleLike}
+          onAddToCart={addToCart}
+          onDecrement={decrement}
+        />
       )}
 
-      {/* ── Menu ── */}
       {nav === "menu" && (
-        <main>
-          {!query.trim() && (
-            <CategoryPills items={categories} activeId={activeCategory} onSelect={(id) => { setActiveCategory(id); setTodaySpecialOnly(false); }} />
-          )}
-
-          <div className="px-4 pt-2">
-            {todaySpecialOnly && (
-              <div className="mb-3 flex items-center gap-2">
-                <button onClick={() => setTodaySpecialOnly(false)} className="flex items-center gap-1 text-xs font-semibold text-muted">
-                  <ChevronLeftIcon width={14} height={14} /> Back to menu
-                </button>
-              </div>
-            )}
-
-            {visibleItems.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted">No items found.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 pb-4">
-                {visibleItems.map((item) => (
-                  <MenuItemCard
-                    key={item.id}
-                    name={item.name}
-                    description={item.description}
-                    price={item.price}
-                    imageUrl={item.imageUrl}
-                    qty={cart[item.id]?.qty ?? 0}
-                    liked={liked.has(item.id)}
-                    onOpen={() => setOpenItemId(item.id)}
-                    onToggleLike={() => toggleLike(item.id)}
-                    onIncrement={() => addToCart(item)}
-                    onDecrement={() => decrement(item.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </main>
+        <MenuScreen
+          categories={categories}
+          activeCategory={activeCategory}
+          onSelectCategory={(id) => { setActiveCategory(id); setTodaySpecialOnly(false); }}
+          query={query}
+          todaySpecialOnly={todaySpecialOnly}
+          onBackToMenu={() => setTodaySpecialOnly(false)}
+          visibleItems={visibleItems}
+          cart={cart}
+          liked={liked}
+          onOpenItem={setOpenItemId}
+          onToggleLike={toggleLike}
+          onAddToCart={addToCart}
+          onDecrement={decrement}
+        />
       )}
 
-      {/* ── Favourites ── */}
       {nav === "favourites" && (
-        <main className="px-4">
-          <h2 className="mb-3 text-sm font-bold text-foreground">My Favourite</h2>
-          {allItems.filter((i) => liked.has(i.id)).length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted">No favourites yet — tap the heart on any item.</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {allItems
-                .filter((i) => liked.has(i.id))
-                .map((item) => (
-                  <li key={item.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-2.5 shadow-sm">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-background">
-                      {item.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-lg opacity-30">🍽️</div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                      <p className="text-sm font-bold text-accent">Rs {item.price.toFixed(2)}</p>
-                    </div>
-                    {(cart[item.id]?.qty ?? 0) === 0 ? (
-                      <button
-                        onClick={() => addToCart(item)}
-                        className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-accent-foreground"
-                      >
-                        +
-                      </button>
-                    ) : (
-                      <QuantityStepper
-                        size="sm"
-                        qty={cart[item.id]?.qty ?? 0}
-                        onIncrement={() => addToCart(item)}
-                        onDecrement={() => decrement(item.id)}
-                      />
-                    )}
-                  </li>
-                ))}
-            </ul>
-          )}
-        </main>
+        <FavouritesScreen
+          allItems={allItems}
+          liked={liked}
+          cart={cart}
+          onAddToCart={addToCart}
+          onDecrement={decrement}
+        />
       )}
 
       {/* ── Item detail ── */}

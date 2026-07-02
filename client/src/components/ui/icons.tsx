@@ -25,16 +25,6 @@ export function HomeIcon(props: IconProps) {
   );
 }
 
-export function MenuIcon(props: IconProps) {
-  return (
-    <svg {...base(props)}>
-      <path d="M4 6h16" />
-      <path d="M4 12h16" />
-      <path d="M4 18h10" />
-    </svg>
-  );
-}
-
 export function HeartIcon({ filled, ...props }: IconProps & { filled?: boolean }) {
   return (
     <svg {...base(props)} fill={filled ? "currentColor" : "none"}>
