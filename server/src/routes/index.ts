@@ -30,6 +30,7 @@ router.delete("/super/companies/:id",        requireAuth, requireRole("SUPERADMI
 // ── Hotel Admin ───────────────────────────────────────────
 router.get(   "/categories",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(categories.list));
 router.post(  "/categories",     requireAuth, requireRole("ADMIN"), ah(categories.create));
+router.patch( "/categories/:id", requireAuth, requireRole("ADMIN"), ah(categories.update));
 router.delete("/categories/:id", requireAuth, requireRole("ADMIN"), ah(categories.remove));
 
 router.get(   "/menu-items",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(menuItems.list));
@@ -39,6 +40,7 @@ router.delete("/menu-items/:id", requireAuth, requireRole("ADMIN"), ah(menuItems
 
 router.get(   "/tables",     requireAuth, requireRole("ADMIN"), ah(tables.list));
 router.post(  "/tables",     requireAuth, requireRole("ADMIN"), ah(tables.create));
+router.patch( "/tables/:id", requireAuth, requireRole("ADMIN"), ah(tables.update));
 router.delete("/tables/:id", requireAuth, requireRole("ADMIN"), ah(tables.remove));
 
 router.get(   "/restaurant/settings",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(restaurant.getSettings));

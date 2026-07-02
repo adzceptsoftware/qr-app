@@ -15,6 +15,20 @@ export async function create(req: AuthRequest, res: Response) {
   res.status(201).json({ id: table._id.toString(), tableNumber: table.tableNumber, token: table.token });
 }
 
+export async function update(req: AuthRequest, res: Response) {
+  const { tableNumber } = req.body as { tableNumber?: string };
+  if (!tableNumber?.trim()) { res.status(400).json({ message: "tableNumber required" }); return; }
+
+  const table = await Table.findOneAndUpdate(
+    { _id: req.params.id, restaurantId: req.user!.restaurantId },
+    { tableNumber: tableNumber.trim() },
+    { new: true }
+  );
+  if (!table) { res.status(404).json({ message: "Not found" }); return; }
+
+  res.json({ id: table._id.toString(), tableNumber: table.tableNumber, token: table.token });
+}
+
 export async function remove(req: AuthRequest, res: Response) {
   await Table.deleteOne({ _id: req.params.id, restaurantId: req.user!.restaurantId });
   res.json({ message: "Deleted" });

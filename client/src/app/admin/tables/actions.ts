@@ -18,6 +18,20 @@ export async function createTable(formData: FormData) {
   revalidatePath("/admin/tables");
 }
 
+export async function updateTable(id: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+  const tableNumber = formData.get("tableNumber") as string;
+  if (!tableNumber?.trim()) return;
+
+  await api(`/tables/${id}`, {
+    method: "PATCH",
+    token: session.user.accessToken,
+    body: JSON.stringify({ tableNumber: tableNumber.trim() }),
+  });
+  revalidatePath("/admin/tables");
+}
+
 export async function deleteTable(id: string) {
   const session = await auth();
   if (!session?.user) return;

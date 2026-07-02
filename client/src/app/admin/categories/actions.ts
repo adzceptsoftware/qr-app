@@ -18,6 +18,20 @@ export async function createCategory(formData: FormData) {
   revalidatePath("/admin/categories");
 }
 
+export async function updateCategory(id: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+  const name = formData.get("name") as string;
+  if (!name?.trim()) return;
+
+  await api(`/categories/${id}`, {
+    method: "PATCH",
+    token: session.user.accessToken,
+    body: JSON.stringify({ name: name.trim() }),
+  });
+  revalidatePath("/admin/categories");
+}
+
 export async function deleteCategory(id: string) {
   const session = await auth();
   if (!session?.user) return;

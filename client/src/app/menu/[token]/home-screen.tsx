@@ -1,6 +1,5 @@
 import type { MenuItemDTO } from "@/lib/types";
 import { MenuItemCard } from "@/components/ui/MenuItemCard";
-import { StarIcon } from "@/components/ui/icons";
 
 type CartLine = { menuItemId: string; name: string; price: number; qty: number };
 
@@ -28,16 +27,18 @@ export function HomeScreen({
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => onOpenMenu(false)}
-          className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface py-5 text-sm font-semibold text-foreground shadow-sm"
+          className="flex flex-col items-center gap-2.5 rounded-2xl border border-border bg-surface py-7 text-base font-semibold text-foreground shadow-sm"
         >
-          <span className="text-2xl">📋</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/menu.svg" alt="" width={36} height={36} />
           Menu
         </button>
         <button
           onClick={() => onOpenMenu(true)}
-          className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface py-5 text-sm font-semibold text-foreground shadow-sm"
+          className="flex flex-col items-center gap-2.5 rounded-2xl border border-border bg-surface py-7 text-base font-semibold text-foreground shadow-sm"
         >
-          <StarIcon width={22} height={22} className="text-accent" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/today-special.svg" alt="" width={36} height={36} />
           Today Special
         </button>
       </div>

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { createCategory, deleteCategory } from "./actions";
+import { createCategory } from "./actions";
+import { CategoryRow } from "./category-row";
 
 type Category = { id: string; name: string; icon?: string; itemCount: number };
 
@@ -20,16 +21,7 @@ export default async function CategoriesPage() {
       </form>
       <ul className="space-y-2">
         {categories.map((c) => (
-          <li key={c.id} className="flex items-center justify-between rounded-lg border border-stone-200 bg-white px-4 py-3">
-            <span className="text-stone-900">
-              {c.icon && <span className="mr-2">{c.icon}</span>}
-              {c.name}{" "}
-              <span className="text-sm text-stone-400">({c.itemCount} items)</span>
-            </span>
-            <form action={deleteCategory.bind(null, c.id)}>
-              <button className="text-sm text-red-600 hover:text-red-800">Delete</button>
-            </form>
-          </li>
+          <CategoryRow key={c.id} category={c} />
         ))}
         {categories.length === 0 && <p className="text-stone-400">No categories yet.</p>}
       </ul>

@@ -26,6 +26,22 @@ export async function create(req: AuthRequest, res: Response) {
   res.status(201).json({ id: category._id.toString(), name: category.name });
 }
 
+export async function update(req: AuthRequest, res: Response) {
+  const { name, icon } = req.body as { name?: string; icon?: string };
+
+  const category = await Category.findOne({ _id: req.params.id, restaurantId: req.user!.restaurantId });
+  if (!category) { res.status(404).json({ message: "Not found" }); return; }
+
+  if (name !== undefined) {
+    if (!name.trim()) { res.status(400).json({ message: "Name required" }); return; }
+    category.name = name.trim();
+  }
+  if (icon !== undefined) category.icon = icon.trim() || undefined;
+
+  await category.save();
+  res.json({ id: category._id.toString(), name: category.name, icon: category.icon });
+}
+
 export async function remove(req: AuthRequest, res: Response) {
   await Category.deleteOne({ _id: req.params.id, restaurantId: req.user!.restaurantId });
   res.json({ message: "Deleted" });

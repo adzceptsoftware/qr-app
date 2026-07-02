@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { generateQrDataUrl } from "@/lib/qr";
-import { createTable, deleteTable } from "./actions";
+import { createTable } from "./actions";
+import { TableCard } from "./table-card";
 
 type Table = { id: string; tableNumber: string; token: string };
 
@@ -35,19 +36,7 @@ export default async function TablesPage() {
       </form>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tablesWithQr.map((t) => (
-          <div key={t.id} className="flex flex-col items-center gap-2 rounded-xl border border-stone-200 bg-white p-4">
-            <p className="font-semibold text-stone-900">Table {t.tableNumber}</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={t.qrDataUrl} alt={`QR for table ${t.tableNumber}`} className="h-40 w-40" />
-            <a href={t.menuUrl} target="_blank" className="text-xs text-stone-400 hover:text-stone-600">{t.menuUrl}</a>
-            <a href={t.qrDataUrl} download={`table-${t.tableNumber}-qr.png`}
-              className="text-xs font-medium text-blue-600 hover:text-blue-800">
-              Download QR
-            </a>
-            <form action={deleteTable.bind(null, t.id)}>
-              <button className="text-xs text-red-600 hover:text-red-800">Delete</button>
-            </form>
-          </div>
+          <TableCard key={t.id} table={t} />
         ))}
         {tablesWithQr.length === 0 && <p className="text-stone-400">No tables yet.</p>}
       </div>
