@@ -1,0 +1,21 @@
+import type { Response } from "express";
+import type { AuthRequest } from "../types";
+import Table from "../models/table.model";
+
+export async function list(req: AuthRequest, res: Response) {
+  const tables = await Table.find({ restaurantId: req.user!.restaurantId }).sort({ tableNumber: 1 });
+  res.json(tables.map((t) => ({ id: t._id.toString(), tableNumber: t.tableNumber, token: t.token })));
+}
+
+export async function create(req: AuthRequest, res: Response) {
+  const { tableNumber } = req.body as { tableNumber?: string };
+  if (!tableNumber?.trim()) { res.status(400).json({ message: "tableNumber required" }); return; }
+
+  const table = await Table.create({ tableNumber: tableNumber.trim(), restaurantId: req.user!.restaurantId });
+  res.status(201).json({ id: table._id.toString(), tableNumber: table.tableNumber, token: table.token });
+}
+
+export async function remove(req: AuthRequest, res: Response) {
+  await Table.deleteOne({ _id: req.params.id, restaurantId: req.user!.restaurantId });
+  res.json({ message: "Deleted" });
+}
