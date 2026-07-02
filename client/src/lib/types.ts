@@ -20,4 +20,5 @@ export type RestaurantDTO = {
   name: string;
   address: string | null;
   phone: string | null;
+  heroImages: string[];
 };

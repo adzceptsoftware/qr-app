@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CategoryDTO, MenuItemDTO, RestaurantDTO } from "@/lib/types";
 import { loadFavourites, saveFavourites } from "@/lib/favourites";
+import { loadSession, saveSession } from "@/lib/cart-session";
 import { BottomNav, type NavKey } from "@/components/ui/BottomNav";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { HeroCarousel } from "@/components/ui/HeroCarousel";
@@ -44,11 +45,25 @@ export function MenuClient({
   const [orderId, setOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [restored, setRestored] = useState(false);
+
   useEffect(() => {
-    // Sync from localStorage after mount (unavailable during SSR).
+    // Sync from storage after mount (unavailable during SSR).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLiked(loadFavourites(restaurant.id));
-  }, [restaurant.id]);
+
+    const session = loadSession(tableToken);
+    if (session.cart) setCart(session.cart);
+    if (session.orderId !== undefined) setOrderId(session.orderId);
+    if (session.nav) setNav(session.nav);
+    setRestored(true);
+  }, [restaurant.id, tableToken]);
+
+  useEffect(() => {
+    // Skip the first render so we don't overwrite storage with the pre-restore defaults.
+    if (!restored) return;
+    saveSession(tableToken, { cart, orderId, nav });
+  }, [tableToken, cart, orderId, nav, restored]);
 
   const allItems = useMemo(
     () => categories.flatMap((c) => c.menuItems.map((item) => ({ ...item, categoryId: c.id, categoryIcon: c.icon }))),
@@ -193,12 +208,14 @@ export function MenuClient({
         </div>
       </header>
 
+      <div className="px-4 pb-4">
+        <HeroCarousel images={restaurant.heroImages} fallbackLabel={restaurant.name} />
+      </div>
+
       {/* ── Home ── */}
       {nav === "home" && (
         <main className="px-4">
-          <HeroCarousel images={[]} fallbackLabel={restaurant.name} />
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => openMenu(false)}
               className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface py-5 text-sm font-semibold text-foreground shadow-sm"
@@ -332,14 +349,6 @@ export function MenuClient({
                 ))}
             </ul>
           )}
-        </main>
-      )}
-
-      {/* ── Orders ── */}
-      {nav === "orders" && (
-        <main className="flex flex-col items-center justify-center px-4 py-16 text-center">
-          <p className="text-sm text-muted">No orders yet this visit.</p>
-          <p className="mt-1 text-xs text-muted">Orders you place will show up here.</p>
         </main>
       )}
 

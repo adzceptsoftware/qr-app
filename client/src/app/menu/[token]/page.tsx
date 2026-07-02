@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { MenuClient } from "./menu-client";
 import type { CategoryDTO, RestaurantDTO } from "@/lib/types";
 
-const BACKEND = process.env.BACKEND_URL ?? "http://localhost:4000";
+const BACKEND = process.env.BACKEND_URL ?? "http://localhost:5000";
 
 type MenuResponse = {
   restaurant: RestaurantDTO;

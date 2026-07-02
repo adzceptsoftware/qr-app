@@ -6,7 +6,7 @@ import Restaurant from "../models/restaurant.model";
 
 export async function getMenu(req: Request, res: Response) {
   const table = await Table.findOne({ token: req.params.token }).populate<{
-    restaurantId: { _id: { toString(): string }; name: string; address?: string; phone?: string; active: boolean };
+    restaurantId: { _id: { toString(): string }; name: string; address?: string; phone?: string; active: boolean; heroImages: string[] };
   }>("restaurantId");
 
   if (!table) { res.status(404).json({ message: "Table not found" }); return; }
@@ -35,6 +35,7 @@ export async function getMenu(req: Request, res: Response) {
       name: table.restaurantId.name,
       address: table.restaurantId.address,
       phone: table.restaurantId.phone,
+      heroImages: table.restaurantId.heroImages ?? [],
     },
     tableNumber: table.tableNumber,
     tableToken: table.token,

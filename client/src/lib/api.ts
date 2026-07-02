@@ -1,4 +1,4 @@
-const BACKEND = process.env.BACKEND_URL ?? "http://localhost:4000";
+const BACKEND = process.env.BACKEND_URL ?? "http://localhost:5000";
 
 export async function api<T = unknown>(
   path: string,

@@ -6,9 +6,10 @@ import Restaurant from "../models/restaurant.model";
 
 export async function login(req: Request, res: Response) {
   const { email, password } = req.body as { email?: string; password?: string };
-  if (!email || !password) { res.status(400).json({ message: "Email and password required" }); return; }
+  if (!email || !password) { res.status(400).json({ message: "Email/username and password required" }); return; }
 
-  const staff = await Staff.findOne({ email: email.toLowerCase() });
+  const identifier = email.trim().toLowerCase();
+  const staff = await Staff.findOne({ $or: [{ email: identifier }, { username: identifier }] });
   if (!staff) { res.status(401).json({ message: "Invalid credentials" }); return; }
 
   const valid = await bcrypt.compare(password, staff.passwordHash);

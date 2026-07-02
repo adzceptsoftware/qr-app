@@ -48,3 +48,6 @@ build/
 # testing / coverage
 coverage/
 **/coverage/
+
+# uploaded files
+server/uploads/

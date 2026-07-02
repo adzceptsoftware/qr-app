@@ -34,10 +34,34 @@ export async function update(req: AuthRequest, res: Response) {
   if (!item || item.categoryId.restaurantId.toString() !== req.user!.restaurantId) {
     res.status(404).json({ message: "Not found" }); return;
   }
-  const { available } = req.body as { available?: boolean };
+  const { name, description, price, imageUrl, categoryId, badge, available } = req.body as {
+    name?: string; description?: string; price?: number; imageUrl?: string;
+    categoryId?: string; badge?: string; available?: boolean;
+  };
+
+  if (categoryId !== undefined) {
+    const category = await Category.findOne({ _id: categoryId, restaurantId: req.user!.restaurantId });
+    if (!category) { res.status(403).json({ message: "Category not found" }); return; }
+    item.categoryId = category._id;
+  }
+  if (name !== undefined) {
+    if (!name.trim()) { res.status(400).json({ message: "name required" }); return; }
+    item.name = name.trim();
+  }
+  if (price !== undefined) {
+    if (!price) { res.status(400).json({ message: "price required" }); return; }
+    item.price = price;
+  }
+  if (description !== undefined) item.description = description.trim() || undefined;
+  if (imageUrl !== undefined) item.imageUrl = imageUrl.trim() || undefined;
+  if (badge !== undefined) item.badge = badge.trim() || undefined;
   if (available !== undefined) item.available = available;
+
   await item.save();
-  res.json({ id: item._id.toString(), available: item.available });
+  res.json({
+    id: item._id.toString(), name: item.name, description: item.description, price: item.price,
+    imageUrl: item.imageUrl, available: item.available, badge: item.badge, categoryId: item.categoryId.toString(),
+  });
 }
 
 export async function remove(req: AuthRequest, res: Response) {

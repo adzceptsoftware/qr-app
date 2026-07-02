@@ -24,7 +24,7 @@ export async function createCompany(formData: FormData) {
   await api("/super/companies", {
     method: "POST",
     token: t,
-    body: JSON.stringify({ name, address: address || undefined, phone: phone || undefined, adminEmail, adminName, adminPassword }),
+    body: JSON.stringify({ restaurantName: name, address: address || undefined, phone: phone || undefined, adminEmail, adminName, adminPassword }),
   });
   revalidatePath("/super-admin/companies");
 }

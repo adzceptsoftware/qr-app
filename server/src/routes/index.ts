@@ -5,41 +5,57 @@ import * as categories from "../controllers/categories.controller";
 import * as menuItems from "../controllers/menu-items.controller";
 import * as tables from "../controllers/tables.controller";
 import * as orders from "../controllers/orders.controller";
+import * as restaurant from "../controllers/restaurant.controller";
+import * as staff from "../controllers/staff.controller";
+import { uploadImage } from "../controllers/uploads.controller";
 import { getMenu } from "../controllers/menu.controller";
 import { requireAuth, requireRole } from "../middleware/auth";
+import { imageUpload } from "../middleware/upload";
+import { asyncHandler } from "../middleware/asyncHandler";
+import type { AuthRequest } from "../types";
 
 const router = Router();
+const ah = asyncHandler<AuthRequest>;
 
 // ── Auth ──────────────────────────────────────────────────
-router.post("/auth/login", login);
+router.post("/auth/login", asyncHandler(login));
 
 // ── Super Admin (platform owner) ─────────────────────────
-router.get(   "/super/stats",              requireAuth, requireRole("SUPERADMIN"), getCompanyStats);
-router.get(   "/super/companies",          requireAuth, requireRole("SUPERADMIN"), listCompanies);
-router.post(  "/super/companies",          requireAuth, requireRole("SUPERADMIN"), createCompany);
-router.patch( "/super/companies/:id/toggle", requireAuth, requireRole("SUPERADMIN"), toggleCompany);
-router.delete("/super/companies/:id",      requireAuth, requireRole("SUPERADMIN"), deleteCompany);
+router.get(   "/super/stats",                requireAuth, requireRole("SUPERADMIN"), ah(getCompanyStats));
+router.get(   "/super/companies",            requireAuth, requireRole("SUPERADMIN"), ah(listCompanies));
+router.post(  "/super/companies",            requireAuth, requireRole("SUPERADMIN"), ah(createCompany));
+router.patch( "/super/companies/:id/toggle", requireAuth, requireRole("SUPERADMIN"), ah(toggleCompany));
+router.delete("/super/companies/:id",        requireAuth, requireRole("SUPERADMIN"), ah(deleteCompany));
 
 // ── Hotel Admin ───────────────────────────────────────────
-router.get(   "/categories",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), categories.list);
-router.post(  "/categories",     requireAuth, requireRole("ADMIN"), categories.create);
-router.delete("/categories/:id", requireAuth, requireRole("ADMIN"), categories.remove);
+router.get(   "/categories",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(categories.list));
+router.post(  "/categories",     requireAuth, requireRole("ADMIN"), ah(categories.create));
+router.delete("/categories/:id", requireAuth, requireRole("ADMIN"), ah(categories.remove));
 
-router.get(   "/menu-items",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), menuItems.list);
-router.post(  "/menu-items",     requireAuth, requireRole("ADMIN"), menuItems.create);
-router.patch( "/menu-items/:id", requireAuth, requireRole("ADMIN"), menuItems.update);
-router.delete("/menu-items/:id", requireAuth, requireRole("ADMIN"), menuItems.remove);
+router.get(   "/menu-items",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(menuItems.list));
+router.post(  "/menu-items",     requireAuth, requireRole("ADMIN"), ah(menuItems.create));
+router.patch( "/menu-items/:id", requireAuth, requireRole("ADMIN"), ah(menuItems.update));
+router.delete("/menu-items/:id", requireAuth, requireRole("ADMIN"), ah(menuItems.remove));
 
-router.get(   "/tables",     requireAuth, requireRole("ADMIN"), tables.list);
-router.post(  "/tables",     requireAuth, requireRole("ADMIN"), tables.create);
-router.delete("/tables/:id", requireAuth, requireRole("ADMIN"), tables.remove);
+router.get(   "/tables",     requireAuth, requireRole("ADMIN"), ah(tables.list));
+router.post(  "/tables",     requireAuth, requireRole("ADMIN"), ah(tables.create));
+router.delete("/tables/:id", requireAuth, requireRole("ADMIN"), ah(tables.remove));
+
+router.get(   "/restaurant/settings",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(restaurant.getSettings));
+router.patch( "/restaurant/hero-images",  requireAuth, requireRole("ADMIN"), ah(restaurant.updateHeroImages));
+
+router.get(   "/kitchen-staff",     requireAuth, requireRole("ADMIN"), ah(staff.listKitchenStaff));
+router.post(  "/kitchen-staff",     requireAuth, requireRole("ADMIN"), ah(staff.createKitchenStaff));
+router.delete("/kitchen-staff/:id", requireAuth, requireRole("ADMIN"), ah(staff.removeKitchenStaff));
+
+router.post(  "/uploads", requireAuth, requireRole("ADMIN"), imageUpload.single("file"), ah(uploadImage));
 
 // ── Kitchen ───────────────────────────────────────────────
-router.get(   "/orders",              requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), orders.listActive);
-router.patch( "/orders/:id/status",   requireAuth, requireRole("ADMIN", "KITCHEN"), orders.updateStatus);
+router.get(   "/orders",              requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(orders.listActive));
+router.patch( "/orders/:id/status",   requireAuth, requireRole("ADMIN", "KITCHEN"), ah(orders.updateStatus));
 
 // ── Customer (public) ─────────────────────────────────────
-router.post("/orders", orders.create);
-router.get( "/menu/:token", getMenu);
+router.post("/orders", asyncHandler(orders.create));
+router.get( "/menu/:token", asyncHandler(getMenu));
 
 export default router;

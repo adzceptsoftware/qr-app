@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-const BACKEND = process.env.BACKEND_URL ?? "http://localhost:4000";
+const BACKEND = process.env.BACKEND_URL ?? "http://localhost:5000";
 
 export async function PATCH(
   req: Request,
