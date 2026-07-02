@@ -13,6 +13,7 @@ import { FloatingCartButton } from "@/components/ui/FloatingCartButton";
 import { CartSheet } from "@/components/ui/CartSheet";
 import { Button } from "@/components/ui/Button";
 import { HeartIcon } from "@/components/ui/icons";
+import { Breadcrumb, type BreadcrumbSegment } from "@/components/ui/Breadcrumb";
 import { HomeScreen } from "./home-screen";
 import { MenuScreen } from "./menu-screen";
 import { FavouritesScreen } from "./favourites-screen";
@@ -156,6 +157,20 @@ export function MenuClient({
   const openItem: (MenuItemDTO & { categoryId: string; categoryIcon?: string | null }) | undefined =
     allItems.find((i) => i.id === openItemId);
 
+  const breadcrumbSegments: BreadcrumbSegment[] = [{ label: "Home", onClick: () => setNav("home") }];
+  if (nav === "menu") {
+    breadcrumbSegments.push({ label: "Menu", onClick: () => setTodaySpecialOnly(false) });
+    if (query.trim()) {
+      breadcrumbSegments.push({ label: "Search" });
+    } else if (todaySpecialOnly) {
+      breadcrumbSegments.push({ label: "Today Special" });
+    } else if (activeCategoryData) {
+      breadcrumbSegments.push({ label: activeCategoryData.name });
+    }
+  } else if (nav === "favourites") {
+    breadcrumbSegments.push({ label: "Favourites" });
+  }
+
   /* ── Order success ── */
   if (orderId) {
     return (
@@ -208,8 +223,12 @@ export function MenuClient({
         </div>
       </header>
 
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-3">
         <HeroCarousel images={restaurant.heroImages} fallbackLabel={restaurant.name} />
+      </div>
+
+      <div className="px-4 pb-4">
+        <Breadcrumb segments={breadcrumbSegments} />
       </div>
 
       {nav === "home" && (
