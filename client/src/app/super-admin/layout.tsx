@@ -7,10 +7,5 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     await signOut({ redirectTo: "/login" });
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <SuperAdminNav onSignOut={handleSignOut} />
-      <main className="p-3 sm:p-6">{children}</main>
-    </div>
-  );
+  return <SuperAdminNav onSignOut={handleSignOut}>{children}</SuperAdminNav>;
 }

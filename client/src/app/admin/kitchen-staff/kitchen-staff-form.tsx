@@ -2,41 +2,77 @@
 
 import { useState } from "react";
 import { PasswordInput } from "@/components/ui/PasswordInput";
-import { createKitchenStaff } from "./actions";
+import { Card, inputClass, labelClass, btnPrimary, btnSecondary } from "@/components/dashboard/ui";
+import { createKitchenStaff, updateKitchenStaff } from "./actions";
 
-export function KitchenStaffForm() {
+type KitchenStaffMember = { id: string; name: string; username: string };
+
+export function KitchenStaffForm({
+  editingMember,
+  onDone,
+  onCancel,
+}: {
+  editingMember: KitchenStaffMember | null;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
   const [error, setError] = useState<string | null>(null);
-  const [formKey, setFormKey] = useState(0);
+  const isEditing = !!editingMember;
 
   return (
-    <form
-      key={formKey}
-      action={async (formData) => {
-        setError(null);
-        try {
-          await createKitchenStaff(formData);
-          setFormKey((k) => k + 1);
-        } catch (e) {
-          setError(e instanceof Error ? e.message : "Could not create account");
-        }
-      }}
-      className="mb-6 space-y-2 rounded-xl border border-stone-200 bg-white p-4"
-    >
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-      <div className="flex gap-2">
-        <input name="name" placeholder="Full name" required
-          className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm" />
-        <input name="username" placeholder="Username" required
-          className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+    <Card key={editingMember?.id ?? "new"} className={`p-5 ${isEditing ? "ring-2 ring-accent/30" : ""}`}>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-bold text-foreground">{isEditing ? "Edit account" : "New kitchen account"}</h2>
+        {isEditing && (
+          <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-accent">
+            Editing
+          </span>
+        )}
       </div>
-      <PasswordInput name="password" placeholder="Password (min 6 chars)" required autoComplete="new-password" />
-      <button className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700">
-        Add kitchen account
-      </button>
-    </form>
+
+      <form
+        action={async (formData) => {
+          setError(null);
+          try {
+            if (editingMember) await updateKitchenStaff(editingMember.id, formData);
+            else await createKitchenStaff(formData);
+            onDone();
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Could not save account");
+          }
+        }}
+        className="space-y-4"
+      >
+        {error && (
+          <div className="rounded-lg border border-danger/20 bg-danger/10 px-3 py-2.5 text-sm text-danger">{error}</div>
+        )}
+        <div>
+          <label className={labelClass}>Full name</label>
+          <input name="name" defaultValue={editingMember?.name ?? ""} placeholder="Jane Cook" required className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Username</label>
+          <input name="username" defaultValue={editingMember?.username ?? ""} placeholder="janecook" required className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>{isEditing ? "New password" : "Password"}</label>
+          <PasswordInput
+            name="password"
+            placeholder={isEditing ? "Leave blank to keep current" : "Min 6 characters"}
+            required={!isEditing}
+            autoComplete="new-password"
+            className={`${inputClass} pr-10`}
+          />
+        </div>
+        <div className="flex gap-2">
+          <button className={`${btnPrimary} flex-1`}>{isEditing ? "Save changes" : "Create account"}</button>
+          {isEditing && (
+            <button type="button" onClick={onCancel} className={btnSecondary}>
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+    </Card>
   );
 }

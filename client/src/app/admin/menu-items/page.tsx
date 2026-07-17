@@ -1,9 +1,9 @@
 import { auth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { CreateMenuItemForm } from "./create-menu-item-form";
-import { MenuItemRow } from "./menu-item-row";
+import { PageHeader, EmptyState } from "@/components/dashboard/ui";
+import { MenuItemsManager } from "./menu-items-manager";
 
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; parentId?: string | null };
 type MenuItem = {
   id: string; name: string; price: number; available: boolean; categoryId: string; categoryName: string;
   description?: string; imageUrl?: string; badge?: string;
@@ -19,21 +19,14 @@ export default async function MenuItemsPage() {
   ]);
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="mb-4 text-xl font-bold text-stone-900">Menu Items</h1>
+    <div>
+      <PageHeader title="Menu Items" description="Add dishes, set prices, upload photos and manage availability." />
 
       {categories.length === 0 ? (
-        <p className="text-stone-400">Create a category first.</p>
+        <EmptyState title="Create a category first" hint="Menu items must belong to a category before you can add them." />
       ) : (
-        <CreateMenuItemForm categories={categories} />
+        <MenuItemsManager categories={categories} items={menuItems} />
       )}
-
-      <ul className="space-y-2">
-        {menuItems.map((item) => (
-          <MenuItemRow key={item.id} item={item} categories={categories} />
-        ))}
-        {menuItems.length === 0 && <p className="text-stone-400">No menu items yet.</p>}
-      </ul>
     </div>
   );
 }

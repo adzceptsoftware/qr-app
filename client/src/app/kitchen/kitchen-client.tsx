@@ -2,37 +2,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { OrderDTO, OrderStatus } from "@/lib/order-types";
-import { OrderCard, STATUS_CONFIG_DARK, STATUS_CONFIG_LIGHT } from "./order-card";
-
-const THEME_KEY = "qr-app:kitchen-theme";
+import { OrderCard, STATUS_CONFIG } from "./order-card";
 
 const FILTERS: { key: "ALL" | OrderStatus; label: string }[] = [
-  { key: "ALL", label: "All Orders" },
   { key: "RECEIVED", label: "Received" },
   { key: "PREPARING", label: "Preparing" },
   { key: "READY", label: "Ready" },
   { key: "SERVED", label: "Served" },
+  { key: "ALL", label: "All" },
 ];
+
+/** Only show orders placed today — yesterday's tickets clear out automatically. */
+function isToday(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
 
 export function KitchenClient({ initialOrders, restaurantName }: { initialOrders: OrderDTO[]; restaurantName: string }) {
   const [orders, setOrders] = useState(initialOrders);
   const [pollError, setPollError] = useState(false);
-  const [filter, setFilter] = useState<"ALL" | OrderStatus>("ALL");
-  const [light, setLight] = useState(false);
-  const [, tick] = useState(0);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLight(window.localStorage.getItem(THEME_KEY) === "light");
-  }, []);
-
-  function toggleTheme() {
-    setLight((prev) => {
-      const next = !prev;
-      window.localStorage.setItem(THEME_KEY, next ? "light" : "dark");
-      return next;
-    });
-  }
+  const [filter, setFilter] = useState<"ALL" | OrderStatus>("RECEIVED");
+  const [tickN, tick] = useState(0);
 
   useEffect(() => {
     const poll = setInterval(async () => {
@@ -57,55 +52,54 @@ export function KitchenClient({ initialOrders, restaurantName }: { initialOrders
     if (!res.ok) setOrders(snapshot);
   }
 
-  const counts = useMemo(
-    () => ({
-      RECEIVED: orders.filter((o) => o.status === "RECEIVED").length,
-      PREPARING: orders.filter((o) => o.status === "PREPARING").length,
-      READY: orders.filter((o) => o.status === "READY").length,
-    }),
-    [orders]
+  // Re-derive on every poll and on the 15s tick so day-rollover drops old tickets.
+  const todaysOrders = useMemo(
+    () => orders.filter((o) => isToday(o.createdAt)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orders, tickN]
   );
 
-  const visibleOrders = filter === "ALL" ? orders : orders.filter((o) => o.status === filter);
-  const statusConfig = light ? STATUS_CONFIG_LIGHT : STATUS_CONFIG_DARK;
+  const counts = useMemo(
+    () => ({
+      RECEIVED: todaysOrders.filter((o) => o.status === "RECEIVED").length,
+      PREPARING: todaysOrders.filter((o) => o.status === "PREPARING").length,
+      READY: todaysOrders.filter((o) => o.status === "READY").length,
+    }),
+    [todaysOrders]
+  );
+
+  const visibleOrders = filter === "ALL" ? todaysOrders : todaysOrders.filter((o) => o.status === filter);
 
   return (
-    <div className={`min-h-screen pb-10 ${light ? "bg-stone-50" : "bg-stone-950"}`}>
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className={`flex flex-col gap-3 border-b px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 ${
-        light ? "border-stone-200" : "border-stone-800"
-      }`}>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500">{restaurantName}</p>
-          <h1 className={`mt-1 text-2xl font-bold ${light ? "text-stone-900" : "text-white"}`}>Kitchen Display</h1>
-        </div>
+      <header className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border bg-surface/90 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs font-medium">
-            <span className={`h-2 w-2 rounded-full ${pollError ? "bg-red-500" : "bg-emerald-400"}`} />
-            <span className={pollError ? "text-red-400" : light ? "text-stone-500" : "text-stone-400"}>
-              {pollError ? "Connection lost — retrying…" : "Live"}
-            </span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground shadow-sm">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8M12 17v4" />
+            </svg>
+          </span>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">{restaurantName}</p>
+            <h1 className="text-2xl font-bold text-foreground">Kitchen Display</h1>
           </div>
-          <button
-            onClick={toggleTheme}
-            aria-label={light ? "Switch to dark theme" : "Switch to light theme"}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg border text-sm ${
-              light ? "border-stone-200 bg-white hover:bg-stone-50" : "border-stone-800 bg-stone-900 hover:bg-stone-800"
-            }`}
-          >
-            {light ? "🌙" : "☀️"}
-          </button>
+        </div>
+        <div className="flex items-center gap-2 self-start rounded-full border border-border bg-surface px-4 py-2 text-base font-semibold sm:self-auto">
+          <span className={`h-2.5 w-2.5 rounded-full ${pollError ? "bg-danger" : "animate-pulse bg-emerald-500"}`} />
+          <span className={pollError ? "text-danger" : "text-muted"}>{pollError ? "Reconnecting…" : "Live"}</span>
         </div>
       </header>
 
       {/* Stats */}
-      <div className="flex flex-wrap gap-3 px-4 py-4 sm:px-8">
+      <div className="grid grid-cols-3 gap-3 px-4 py-4 sm:px-8">
         {(["RECEIVED", "PREPARING", "READY"] as const).map((status) => {
-          const cfg = statusConfig[status];
+          const cfg = STATUS_CONFIG[status];
           return (
-            <div key={status} className={`flex items-center gap-2 rounded-lg border px-4 py-2 ${cfg.bg}`}>
-              <span className={`text-lg font-bold ${cfg.text}`}>{counts[status]}</span>
-              <span className={light ? "text-xs text-stone-500" : "text-xs text-stone-400"}>{cfg.label}</span>
+            <div key={status} className={`rounded-2xl border p-4 ${cfg.bg}`}>
+              <p className={`text-4xl font-bold ${cfg.text}`}>{counts[status]}</p>
+              <p className="mt-1 text-sm font-medium text-muted">{cfg.label}</p>
             </div>
           );
         })}
@@ -117,12 +111,10 @@ export function KitchenClient({ initialOrders, restaurantName }: { initialOrders
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`inline-flex min-h-[44px] shrink-0 items-center rounded-full border px-5 py-2 text-base font-semibold transition-colors ${
               filter === f.key
-                ? "border-amber-500 bg-amber-500/10 text-amber-600"
-                : light
-                  ? "border-stone-200 text-stone-500 hover:border-stone-300"
-                  : "border-stone-800 text-stone-400 hover:border-stone-700"
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border bg-surface text-muted hover:border-muted/60"
             }`}
           >
             {f.label}
@@ -131,15 +123,13 @@ export function KitchenClient({ initialOrders, restaurantName }: { initialOrders
       </div>
 
       {/* Order cards */}
-      <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 px-4 pb-10 sm:grid-cols-2 sm:px-8 lg:grid-cols-3 xl:grid-cols-4">
         {visibleOrders.map((order) => (
-          <OrderCard key={order.id} order={order} onAdvance={advance} light={light} />
+          <OrderCard key={order.id} order={order} onAdvance={advance} />
         ))}
         {visibleOrders.length === 0 && (
-          <div className={`col-span-full rounded-xl border-2 border-dashed py-16 text-center ${
-            light ? "border-stone-200" : "border-stone-800"
-          }`}>
-            <p className={light ? "text-sm text-stone-400" : "text-sm text-stone-500"}>No orders</p>
+          <div className="col-span-full rounded-2xl border-2 border-dashed border-border py-20 text-center">
+            <p className="text-base text-muted">No orders here right now</p>
           </div>
         )}
       </div>

@@ -7,7 +7,7 @@ export function Breadcrumb({ segments }: { segments: BreadcrumbSegment[] }) {
         const isLast = i === segments.length - 1;
         return (
           <span key={i} className="flex items-center gap-1.5">
-            {i > 0 && <span className="text-border">/</span>}
+            {i > 0 && <span className="text-border">&gt;</span>}
             {segment.onClick && !isLast ? (
               <button onClick={segment.onClick} className="hover:text-foreground transition-colors">
                 {segment.label}

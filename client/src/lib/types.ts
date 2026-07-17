@@ -8,11 +8,19 @@ export type MenuItemDTO = {
   badge?: string | null;
 };
 
+export type SubcategoryDTO = {
+  id: string;
+  name: string;
+  imageUrl?: string | null;
+  menuItems: MenuItemDTO[];
+};
+
 export type CategoryDTO = {
   id: string;
   name: string;
-  icon?: string | null;
+  imageUrl?: string | null;
   menuItems: MenuItemDTO[];
+  subcategories: SubcategoryDTO[];
 };
 
 export type RestaurantDTO = {

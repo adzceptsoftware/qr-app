@@ -39,6 +39,41 @@ export async function createKitchenStaff(req: AuthRequest, res: Response) {
   res.status(201).json({ id: staff._id.toString(), name: staff.name, username: staff.username });
 }
 
+export async function updateKitchenStaff(req: AuthRequest, res: Response) {
+  const { name, username, password } = req.body as { name?: string; username?: string; password?: string };
+
+  const staff = await Staff.findOne({ _id: req.params.id, restaurantId: req.user!.restaurantId, role: "KITCHEN" });
+  if (!staff) {
+    res.status(404).json({ message: "Kitchen account not found" });
+    return;
+  }
+
+  if (name?.trim()) staff.name = name.trim();
+
+  if (username?.trim()) {
+    const normalizedUsername = username.trim().toLowerCase();
+    if (normalizedUsername !== staff.username) {
+      const existing = await Staff.findOne({ username: normalizedUsername, _id: { $ne: staff._id } });
+      if (existing) {
+        res.status(409).json({ message: "That username is already taken" });
+        return;
+      }
+      staff.username = normalizedUsername;
+    }
+  }
+
+  if (password) {
+    if (password.length < 6) {
+      res.status(400).json({ message: "Password must be at least 6 characters" });
+      return;
+    }
+    staff.passwordHash = await bcrypt.hash(password, 10);
+  }
+
+  await staff.save();
+  res.json({ id: staff._id.toString(), name: staff.name, username: staff.username });
+}
+
 export async function removeKitchenStaff(req: AuthRequest, res: Response) {
   await Staff.deleteOne({ _id: req.params.id, restaurantId: req.user!.restaurantId, role: "KITCHEN" });
   res.json({ message: "Deleted" });

@@ -12,10 +12,10 @@ import { ItemDetailSheet } from "@/components/ui/ItemDetailSheet";
 import { FloatingCartButton } from "@/components/ui/FloatingCartButton";
 import { CartSheet } from "@/components/ui/CartSheet";
 import { Button } from "@/components/ui/Button";
-import { HeartIcon } from "@/components/ui/icons";
 import { Breadcrumb, type BreadcrumbSegment } from "@/components/ui/Breadcrumb";
 import { HomeScreen } from "./home-screen";
 import { MenuScreen } from "./menu-screen";
+import { BrowseScreen } from "./browse-screen";
 import { FavouritesScreen } from "./favourites-screen";
 
 type CartLine = { menuItemId: string; name: string; price: number; qty: number };
@@ -37,9 +37,10 @@ export function MenuClient({
   const [nav, setNav] = useState<NavKey>("home");
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [liked, setLiked] = useState<Set<string>>(new Set());
-  const [activeCategory, setActiveCategory] = useState(categories[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [todaySpecialOnly, setTodaySpecialOnly] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(categories[0]?.id ?? "");
+  const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [showCart, setShowCart] = useState(false);
   const [placing, setPlacing] = useState(false);
@@ -66,24 +67,29 @@ export function MenuClient({
     saveSession(tableToken, { cart, orderId, nav });
   }, [tableToken, cart, orderId, nav, restored]);
 
+  // Flat union of every item across categories AND subcategories — powers search,
+  // Today Special, favourites, cart and the item-detail sheet.
   const allItems = useMemo(
-    () => categories.flatMap((c) => c.menuItems.map((item) => ({ ...item, categoryId: c.id, categoryIcon: c.icon }))),
+    () =>
+      categories.flatMap((c) => [
+        ...c.menuItems.map((item) => ({ ...item, categoryId: c.id })),
+        ...c.subcategories.flatMap((s) => s.menuItems.map((item) => ({ ...item, categoryId: s.id }))),
+      ]),
     [categories]
   );
 
-  const activeCategoryData = categories.find((c) => c.id === activeCategory) ?? categories[0];
+  const selectedCategory = useMemo(
+    () => categories.find((c) => c.id === selectedCategoryId) ?? categories[0] ?? null,
+    [categories, selectedCategoryId]
+  );
+  const selectedSub = selectedCategory?.subcategories.find((s) => s.id === selectedSubId) ?? null;
 
   const visibleItems = useMemo(() => {
-    let items = query.trim() ? allItems : activeCategoryData?.menuItems ?? [];
-    if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      items = items.filter((i) => i.name.toLowerCase().includes(q));
-    }
-    if (todaySpecialOnly) {
-      items = items.filter((i) => !!i.badge);
-    }
-    return items;
-  }, [query, allItems, activeCategoryData, todaySpecialOnly]);
+    const q = query.trim().toLowerCase();
+    if (q) return allItems.filter((i) => i.name.toLowerCase().includes(q));
+    if (todaySpecialOnly) return allItems.filter((i) => !!i.badge);
+    return allItems;
+  }, [allItems, query, todaySpecialOnly]);
 
   const lines = useMemo(() => Object.values(cart), [cart]);
   const total = useMemo(() => lines.reduce((s, l) => s + l.price * l.qty, 0), [lines]);
@@ -121,10 +127,22 @@ export function MenuClient({
     });
   }
 
+  function goBrowseRoot() {
+    setTodaySpecialOnly(false);
+    setQuery("");
+    setSelectedSubId(null);
+  }
+
   function openMenu(specialOnly: boolean) {
     setTodaySpecialOnly(specialOnly);
     setQuery("");
+    setSelectedSubId(null);
     setNav("menu");
+  }
+
+  function selectCategory(id: string) {
+    setSelectedCategoryId(id);
+    setSelectedSubId(null);
   }
 
   async function placeOrder() {
@@ -154,18 +172,22 @@ export function MenuClient({
     }
   }
 
-  const openItem: (MenuItemDTO & { categoryId: string; categoryIcon?: string | null }) | undefined =
+  const openItem: (MenuItemDTO & { categoryId: string }) | undefined =
     allItems.find((i) => i.id === openItemId);
+
+  const isSearching = query.trim().length > 0;
+  const isBrowsing = nav === "menu" && !isSearching && !todaySpecialOnly;
 
   const breadcrumbSegments: BreadcrumbSegment[] = [{ label: "Home", onClick: () => setNav("home") }];
   if (nav === "menu") {
-    breadcrumbSegments.push({ label: "Menu", onClick: () => setTodaySpecialOnly(false) });
-    if (query.trim()) {
+    breadcrumbSegments.push({ label: "Menu", onClick: goBrowseRoot });
+    if (isSearching) {
       breadcrumbSegments.push({ label: "Search" });
     } else if (todaySpecialOnly) {
       breadcrumbSegments.push({ label: "Today Special" });
-    } else if (activeCategoryData) {
-      breadcrumbSegments.push({ label: activeCategoryData.name });
+    } else if (selectedCategory) {
+      breadcrumbSegments.push({ label: selectedCategory.name, onClick: () => setSelectedSubId(null) });
+      if (selectedSub) breadcrumbSegments.push({ label: selectedSub.name });
     }
   } else if (nav === "favourites") {
     breadcrumbSegments.push({ label: "Favourites" });
@@ -181,7 +203,7 @@ export function MenuClient({
         <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">Order confirmed</p>
         <h1 className="mb-3 text-2xl font-bold text-foreground">Thank you!</h1>
         <p className="mb-6 max-w-xs text-sm text-muted">
-          Your order is on its way to <span className="font-semibold text-foreground">Table {tableNumber}</span>.
+          Your order is on its way to <span className="font-semibold text-foreground">{tableNumber}</span>.
         </p>
         <div className="mb-8 rounded-2xl border border-border bg-surface px-8 py-4">
           <p className="text-xs text-muted">Order reference</p>
@@ -193,22 +215,22 @@ export function MenuClient({
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 text-foreground">
+    <div
+      className="min-h-screen bg-background pb-24 text-foreground"
+      style={{ fontFamily: "var(--font-fira), system-ui, sans-serif" }}
+    >
       {/* ── Header ── */}
       <header className="px-4 pb-3 pt-6">
         <div className="flex items-start justify-between">
           <div>
             {restaurant.address && (
-              <p className="text-xs text-muted">{restaurant.address}</p>
+              <p className="text-[13px] font-semibold text-muted">{restaurant.address}</p>
             )}
-            <h1 className="text-xl font-bold text-foreground">{restaurant.name}</h1>
+            <h1 className="text-[28px] font-bold leading-tight tracking-tight text-foreground">
+              {restaurant.name}
+            </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <RatingBadge value={DEFAULT_RATING} />
-            <button className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface">
-              <HeartIcon width={14} height={14} className="text-muted" />
-            </button>
-          </div>
+          <RatingBadge value={DEFAULT_RATING} />
         </div>
 
         <div className="mt-3">
@@ -223,13 +245,15 @@ export function MenuClient({
         </div>
       </header>
 
-      <div className="px-4 pb-3">
+      <div className="px-4 pt-2 pb-5">
         <HeroCarousel images={restaurant.heroImages} fallbackLabel={restaurant.name} />
       </div>
 
-      <div className="px-4 pb-4">
-        <Breadcrumb segments={breadcrumbSegments} />
-      </div>
+      {nav !== "home" && (
+        <div className="px-4 pb-4">
+          <Breadcrumb segments={breadcrumbSegments} />
+        </div>
+      )}
 
       {nav === "home" && (
         <HomeScreen
@@ -245,21 +269,33 @@ export function MenuClient({
       )}
 
       {nav === "menu" && (
-        <MenuScreen
-          categories={categories}
-          activeCategory={activeCategory}
-          onSelectCategory={(id) => { setActiveCategory(id); setTodaySpecialOnly(false); }}
-          query={query}
-          todaySpecialOnly={todaySpecialOnly}
-          onBackToMenu={() => setTodaySpecialOnly(false)}
-          visibleItems={visibleItems}
-          cart={cart}
-          liked={liked}
-          onOpenItem={setOpenItemId}
-          onToggleLike={toggleLike}
-          onAddToCart={addToCart}
-          onDecrement={decrement}
-        />
+        isBrowsing ? (
+          <BrowseScreen
+            categories={categories}
+            selectedCategoryId={selectedCategory?.id ?? ""}
+            selectedSubId={selectedSubId}
+            onSelectCategory={selectCategory}
+            onSelectSub={setSelectedSubId}
+            cart={cart}
+            liked={liked}
+            onOpenItem={setOpenItemId}
+            onToggleLike={toggleLike}
+            onAddToCart={addToCart}
+            onDecrement={decrement}
+          />
+        ) : (
+          <MenuScreen
+            heading={todaySpecialOnly ? "Today Special" : undefined}
+            onBack={todaySpecialOnly ? goBrowseRoot : undefined}
+            items={visibleItems}
+            cart={cart}
+            liked={liked}
+            onOpenItem={setOpenItemId}
+            onToggleLike={toggleLike}
+            onAddToCart={addToCart}
+            onDecrement={decrement}
+          />
+        )
       )}
 
       {nav === "favourites" && (

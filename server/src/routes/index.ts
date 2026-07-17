@@ -27,6 +27,12 @@ router.post(  "/super/companies",            requireAuth, requireRole("SUPERADMI
 router.patch( "/super/companies/:id/toggle", requireAuth, requireRole("SUPERADMIN"), ah(toggleCompany));
 router.delete("/super/companies/:id",        requireAuth, requireRole("SUPERADMIN"), ah(deleteCompany));
 
+// Tables & QR codes are provisioned by the platform owner, per company.
+router.get(   "/super/companies/:companyId/tables",     requireAuth, requireRole("SUPERADMIN"), ah(tables.list));
+router.post(  "/super/companies/:companyId/tables",     requireAuth, requireRole("SUPERADMIN"), ah(tables.create));
+router.patch( "/super/companies/:companyId/tables/:id", requireAuth, requireRole("SUPERADMIN"), ah(tables.update));
+router.delete("/super/companies/:companyId/tables/:id", requireAuth, requireRole("SUPERADMIN"), ah(tables.remove));
+
 // ── Hotel Admin ───────────────────────────────────────────
 router.get(   "/categories",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(categories.list));
 router.post(  "/categories",     requireAuth, requireRole("ADMIN"), ah(categories.create));
@@ -38,16 +44,12 @@ router.post(  "/menu-items",     requireAuth, requireRole("ADMIN"), ah(menuItems
 router.patch( "/menu-items/:id", requireAuth, requireRole("ADMIN"), ah(menuItems.update));
 router.delete("/menu-items/:id", requireAuth, requireRole("ADMIN"), ah(menuItems.remove));
 
-router.get(   "/tables",     requireAuth, requireRole("ADMIN"), ah(tables.list));
-router.post(  "/tables",     requireAuth, requireRole("ADMIN"), ah(tables.create));
-router.patch( "/tables/:id", requireAuth, requireRole("ADMIN"), ah(tables.update));
-router.delete("/tables/:id", requireAuth, requireRole("ADMIN"), ah(tables.remove));
-
 router.get(   "/restaurant/settings",     requireAuth, requireRole("ADMIN", "KITCHEN", "SUPERADMIN"), ah(restaurant.getSettings));
 router.patch( "/restaurant/hero-images",  requireAuth, requireRole("ADMIN"), ah(restaurant.updateHeroImages));
 
 router.get(   "/kitchen-staff",     requireAuth, requireRole("ADMIN"), ah(staff.listKitchenStaff));
 router.post(  "/kitchen-staff",     requireAuth, requireRole("ADMIN"), ah(staff.createKitchenStaff));
+router.patch( "/kitchen-staff/:id", requireAuth, requireRole("ADMIN"), ah(staff.updateKitchenStaff));
 router.delete("/kitchen-staff/:id", requireAuth, requireRole("ADMIN"), ah(staff.removeKitchenStaff));
 
 router.post(  "/uploads", requireAuth, requireRole("ADMIN"), imageUpload.single("file"), ah(uploadImage));

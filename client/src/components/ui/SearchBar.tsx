@@ -10,14 +10,14 @@ export function SearchBar({
   placeholder?: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 text-sm text-foreground shadow-sm">
-      <SearchIcon width={16} height={16} className="text-muted" />
+    <div className="flex items-center gap-2 rounded-full bg-surface px-5 py-3 text-sm text-foreground shadow-sm">
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full bg-transparent outline-none placeholder:text-muted"
       />
+      <SearchIcon width={18} height={18} className="text-muted" />
     </div>
   );
 }
