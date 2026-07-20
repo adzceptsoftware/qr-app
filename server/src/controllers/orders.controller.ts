@@ -9,8 +9,7 @@ const VALID_STATUSES: OrderStatus[] = ["RECEIVED", "PREPARING", "READY", "SERVED
 export async function listActive(req: AuthRequest, res: Response) {
   const orders = await Order.find({
     restaurantId: req.user!.restaurantId,
-    status: { $in: ["RECEIVED", "PREPARING", "READY", "SERVED"] },
-  }).sort({ createdAt: -1 }).limit(50);
+  }).sort({ createdAt: -1 });
 
   res.json(orders.map((o) => ({
     id: o._id.toString(), status: o.status, total: o.total,
