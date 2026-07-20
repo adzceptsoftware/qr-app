@@ -11,8 +11,11 @@ const poppins = Poppins({ variable: "--font-poppins", subsets: ["latin"], weight
 const firaSans = Fira_Sans({ variable: "--font-fira", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata: Metadata = {
-  title: "The Grand Terrace",
-  description: "Fine dining with a view",
+  title: {
+    default: "QR Menu",
+    template: "%s",
+  },
+  description: "Digital menu and ordering",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

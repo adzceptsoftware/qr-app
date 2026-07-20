@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { MenuClient } from "./menu-client";
 import type { CategoryDTO, RestaurantDTO } from "@/lib/types";
 
@@ -10,6 +11,18 @@ type MenuResponse = {
   tableToken: string;
   categories: CategoryDTO[];
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  const res = await fetch(`${BACKEND}/api/v1/menu/${token}`, { cache: "no-store" });
+  if (!res.ok) return {};
+  const data: MenuResponse = await res.json();
+  return { title: data.restaurant.name };
+}
 
 export default async function MenuPage({
   params,
