@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { isValidObjectId } from "mongoose";
 import type { AuthRequest, OrderStatus } from "../types";
 import Table from "../models/table.model";
 import MenuItem from "../models/menu-item.model";
@@ -50,6 +51,30 @@ export async function create(req: Request, res: Response) {
   });
 
   res.status(201).json({ id: order._id.toString() });
+}
+
+/**
+ * Public order tracking — the diner polls this from the confirmation screen.
+ * No auth: the order id is an unguessable ObjectId and only the diner who
+ * placed the order is handed one back. Deliberately exposes nothing about the
+ * restaurant beyond the order itself.
+ */
+export async function track(req: Request, res: Response) {
+  if (!isValidObjectId(req.params.id)) {
+    res.status(404).json({ message: "Not found" }); return;
+  }
+
+  const order = await Order.findById(req.params.id);
+  if (!order) { res.status(404).json({ message: "Not found" }); return; }
+
+  res.json({
+    id: order._id.toString(), status: order.status, total: order.total,
+    createdAt: order.createdAt.toISOString(), updatedAt: order.updatedAt.toISOString(),
+    tableNumber: order.tableNumber,
+    items: order.items.map((i: { _id: { toString(): string }; name: string; qty: number }) => ({
+      id: i._id.toString(), name: i.name, qty: i.qty,
+    })),
+  });
 }
 
 export async function updateStatus(req: AuthRequest, res: Response) {

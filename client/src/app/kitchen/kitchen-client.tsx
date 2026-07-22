@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { OrderDTO, OrderStatus } from "@/lib/order-types";
 import { OrderCard, STATUS_CONFIG } from "./order-card";
+import { useOrderChime } from "./use-order-chime";
 
 const FILTERS: { key: "ALL" | OrderStatus; label: string }[] = [
   { key: "RECEIVED", label: "Received" },
@@ -28,18 +29,32 @@ export function KitchenClient({ initialOrders, restaurantName }: { initialOrders
   const [pollError, setPollError] = useState(false);
   const [filter, setFilter] = useState<"ALL" | OrderStatus>("RECEIVED");
   const [tickN, tick] = useState(0);
+  const { enabled: soundOn, toggle: toggleSound, play: playChime } = useOrderChime();
+
+  // Order ids already seen, so only genuinely new tickets ring. Seeded with the
+  // server-rendered batch so a page refresh never re-announces old orders.
+  const seenIds = useRef(new Set(initialOrders.map((o) => o.id)));
 
   useEffect(() => {
     const poll = setInterval(async () => {
       try {
         const res = await fetch("/api/orders");
-        if (res.ok) { setOrders(await res.json()); setPollError(false); }
+        if (res.ok) {
+          const next = (await res.json()) as OrderDTO[];
+          const isNew = next.some((o) => o.status === "RECEIVED" && !seenIds.current.has(o.id));
+          // Track every id, not just the new ones, so an order that arrives
+          // already past RECEIVED can't ring later.
+          for (const o of next) seenIds.current.add(o.id);
+          if (isNew) playChime();
+          setOrders(next);
+          setPollError(false);
+        }
         else setPollError(true);
       } catch { setPollError(true); }
     }, 5000);
     const timer = setInterval(() => tick((n) => n + 1), 15000);
     return () => { clearInterval(poll); clearInterval(timer); };
-  }, []);
+  }, [playChime]);
 
   async function advance(orderId: string, next: OrderStatus) {
     const snapshot = orders;
@@ -86,9 +101,35 @@ export function KitchenClient({ initialOrders, restaurantName }: { initialOrders
             <h1 className="text-2xl font-bold text-foreground">Kitchen Display</h1>
           </div>
         </div>
-        <div className="flex items-center gap-2 self-start rounded-full border border-border bg-surface px-4 py-2 text-base font-semibold sm:self-auto">
-          <span className={`h-2.5 w-2.5 rounded-full ${pollError ? "bg-danger" : "animate-pulse bg-emerald-500"}`} />
-          <span className={pollError ? "text-danger" : "text-muted"}>{pollError ? "Reconnecting…" : "Live"}</span>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={toggleSound}
+            aria-pressed={soundOn}
+            title={soundOn ? "New-order sound is on — tap to mute" : "New-order sound is muted — tap to unmute"}
+            className={`inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2 text-base font-semibold transition-colors ${
+              soundOn
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border bg-surface text-muted hover:border-muted/60"
+            }`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 5 6 9H2v6h4l5 4V5z" />
+              {soundOn ? (
+                <>
+                  <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                  <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+                </>
+              ) : (
+                <path d="M22 9l-6 6M16 9l6 6" />
+              )}
+            </svg>
+            <span>{soundOn ? "Sound on" : "Muted"}</span>
+          </button>
+
+          <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-base font-semibold">
+            <span className={`h-2.5 w-2.5 rounded-full ${pollError ? "bg-danger" : "animate-pulse bg-emerald-500"}`} />
+            <span className={pollError ? "text-danger" : "text-muted"}>{pollError ? "Reconnecting…" : "Live"}</span>
+          </div>
         </div>
       </header>
 

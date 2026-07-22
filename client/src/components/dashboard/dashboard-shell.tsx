@@ -26,8 +26,11 @@ const ACCENT: Record<Accent, { brand: string; active: string; bar: string; dot: 
   },
 };
 
+/** Dashboard index links match exactly — otherwise they'd stay lit on every child page. */
+const INDEX_HREFS = new Set(["/super-admin", "/admin"]);
+
 function isActive(pathname: string, href: string) {
-  if (href === "/super-admin") return pathname === href;
+  if (INDEX_HREFS.has(href)) return pathname === href;
   return pathname === href || pathname.startsWith(href + "/");
 }
 

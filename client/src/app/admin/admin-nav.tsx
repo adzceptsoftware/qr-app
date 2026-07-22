@@ -3,6 +3,7 @@
 import { DashboardShell, type NavLink } from "@/components/dashboard/dashboard-shell";
 
 const LINKS: NavLink[] = [
+  { href: "/admin", label: "Dashboard", icon: "dashboard" },
   { href: "/admin/categories", label: "Categories", icon: "categories" },
   { href: "/admin/menu-items", label: "Menu Items", icon: "menu" },
   { href: "/admin/hero-images", label: "Menu Photos", icon: "photos" },

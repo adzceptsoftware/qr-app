@@ -5,6 +5,8 @@ type CartLine = { menuItemId: string; name: string; price: number; qty: number }
 type SessionState = {
   cart: Record<string, CartLine>;
   orderId: string | null;
+  /** Whether the full tracker screen is open, vs. browsing with the status banner. */
+  trackerOpen: boolean;
   nav: NavKey;
 };
 

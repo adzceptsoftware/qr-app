@@ -11,12 +11,12 @@ import { RatingBadge } from "@/components/ui/RatingBadge";
 import { ItemDetailSheet } from "@/components/ui/ItemDetailSheet";
 import { FloatingCartButton } from "@/components/ui/FloatingCartButton";
 import { CartSheet } from "@/components/ui/CartSheet";
-import { Button } from "@/components/ui/Button";
 import { Breadcrumb, type BreadcrumbSegment } from "@/components/ui/Breadcrumb";
 import { HomeScreen } from "./home-screen";
 import { MenuScreen } from "./menu-screen";
 import { BrowseScreen } from "./browse-screen";
 import { FavouritesScreen } from "./favourites-screen";
+import { useOrderTracking, OrderTrackerScreen, OrderStatusBanner } from "./order-tracker";
 
 type CartLine = { menuItemId: string; name: string; price: number; qty: number };
 
@@ -45,7 +45,10 @@ export function MenuClient({
   const [showCart, setShowCart] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [trackerOpen, setTrackerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const trackedOrder = useOrderTracking(orderId);
 
   const [restored, setRestored] = useState(false);
 
@@ -57,6 +60,7 @@ export function MenuClient({
     const session = loadSession(tableToken);
     if (session.cart) setCart(session.cart);
     if (session.orderId !== undefined) setOrderId(session.orderId);
+    if (session.trackerOpen !== undefined) setTrackerOpen(session.trackerOpen);
     if (session.nav) setNav(session.nav);
     setRestored(true);
   }, [restaurant.id, tableToken]);
@@ -64,8 +68,8 @@ export function MenuClient({
   useEffect(() => {
     // Skip the first render so we don't overwrite storage with the pre-restore defaults.
     if (!restored) return;
-    saveSession(tableToken, { cart, orderId, nav });
-  }, [tableToken, cart, orderId, nav, restored]);
+    saveSession(tableToken, { cart, orderId, trackerOpen, nav });
+  }, [tableToken, cart, orderId, trackerOpen, nav, restored]);
 
   // Flat union of every item across categories AND subcategories — powers search,
   // Today Special, favourites, cart and the item-detail sheet.
@@ -163,6 +167,7 @@ export function MenuClient({
       }
       const data = (await res.json()) as { id: string };
       setOrderId(data.id);
+      setTrackerOpen(true);
       setCart({});
       setShowCart(false);
     } catch (e) {
@@ -193,24 +198,15 @@ export function MenuClient({
     breadcrumbSegments.push({ label: "Favourites" });
   }
 
-  /* ── Order success ── */
-  if (orderId) {
+  /* ── Order confirmed — live status ── */
+  if (orderId && trackerOpen) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
-        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-accent text-2xl text-accent-foreground">
-          ✓
-        </div>
-        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">Order confirmed</p>
-        <h1 className="mb-3 text-2xl font-bold text-foreground">Thank you!</h1>
-        <p className="mb-6 max-w-xs text-sm text-muted">
-          Your order is on its way to <span className="font-semibold text-foreground">{tableNumber}</span>.
-        </p>
-        <div className="mb-8 rounded-2xl border border-border bg-surface px-8 py-4">
-          <p className="text-xs text-muted">Order reference</p>
-          <p className="mt-1 font-mono text-xl font-bold text-foreground">#{orderId.slice(-8).toUpperCase()}</p>
-        </div>
-        <Button onClick={() => setOrderId(null)}>Order more</Button>
-      </div>
+      <OrderTrackerScreen
+        orderId={orderId}
+        order={trackedOrder}
+        tableNumber={tableNumber}
+        onOrderMore={() => setTrackerOpen(false)}
+      />
     );
   }
 
@@ -329,7 +325,9 @@ export function MenuClient({
       )}
 
       {/* ── Cart ── */}
-      {!showCart && <FloatingCartButton itemCount={itemCount} onClick={() => setShowCart(true)} />}
+      {!showCart && (
+        <FloatingCartButton itemCount={itemCount} onClick={() => setShowCart(true)} raised={!!orderId} />
+      )}
       {showCart && (
         <CartSheet
           lines={lines}
@@ -343,6 +341,15 @@ export function MenuClient({
           }}
           onDecrement={decrement}
           onPlaceOrder={placeOrder}
+        />
+      )}
+
+      {/* ── Live status of the order placed earlier this session ── */}
+      {orderId && !showCart && (
+        <OrderStatusBanner
+          order={trackedOrder}
+          onOpen={() => setTrackerOpen(true)}
+          onDismiss={() => setOrderId(null)}
         />
       )}
 

@@ -7,6 +7,7 @@ import * as tables from "../controllers/tables.controller";
 import * as orders from "../controllers/orders.controller";
 import * as restaurant from "../controllers/restaurant.controller";
 import * as staff from "../controllers/staff.controller";
+import { getDashboard } from "../controllers/stats.controller";
 import { uploadImage } from "../controllers/uploads.controller";
 import { getMenu } from "../controllers/menu.controller";
 import { requireAuth, requireRole } from "../middleware/auth";
@@ -52,6 +53,8 @@ router.post(  "/kitchen-staff",     requireAuth, requireRole("ADMIN"), ah(staff.
 router.patch( "/kitchen-staff/:id", requireAuth, requireRole("ADMIN"), ah(staff.updateKitchenStaff));
 router.delete("/kitchen-staff/:id", requireAuth, requireRole("ADMIN"), ah(staff.removeKitchenStaff));
 
+router.get(   "/stats/dashboard", requireAuth, requireRole("ADMIN", "SUPERADMIN"), ah(getDashboard));
+
 router.post(  "/uploads", requireAuth, requireRole("ADMIN"), imageUpload.single("file"), ah(uploadImage));
 
 // ── Kitchen ───────────────────────────────────────────────
@@ -60,6 +63,7 @@ router.patch( "/orders/:id/status",   requireAuth, requireRole("ADMIN", "KITCHEN
 
 // ── Customer (public) ─────────────────────────────────────
 router.post("/orders", asyncHandler(orders.create));
+router.get( "/orders/:id/track", asyncHandler(orders.track));
 router.get( "/menu/:token", asyncHandler(getMenu));
 
 export default router;
