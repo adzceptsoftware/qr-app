@@ -348,6 +348,21 @@ export function MenuClient({
         />
       )}
 
+      {/* ── Developer credit ── */}
+      <footer className="mt-10 px-4 text-center">
+        <p className="text-[11px] text-muted">
+          Developed by{" "}
+          <a href="https://digihack.lk" target="_blank" rel="noreferrer" className="font-semibold text-foreground">
+            DigiHack
+          </a>
+        </p>
+        <p className="mt-0.5 text-[11px] text-muted">
+          <a href="tel:+94760142500">076 014 2500</a>
+          {" · "}
+          <a href="mailto:digihacklk@gmail.com">digihacklk@gmail.com</a>
+        </p>
+      </footer>
+
       {/* ── Live status of the order placed earlier this session ── */}
       {orderId && !showCart && (
         <OrderStatusBanner

@@ -68,6 +68,17 @@ export default async function LoginPage({
         <p className="mt-6 text-center text-xs text-stone-600">
           Secure staff access only
         </p>
+
+        <p className="mt-2 text-center text-xs text-stone-600">
+          Developed by{" "}
+          <a href="https://digihack.lk" target="_blank" rel="noreferrer" className="font-semibold text-stone-400 hover:text-stone-300">
+            DigiHack
+          </a>
+          {" · "}
+          <a href="tel:+94760142500" className="hover:text-stone-400">076 014 2500</a>
+          {" · "}
+          <a href="mailto:digihacklk@gmail.com" className="hover:text-stone-400">digihacklk@gmail.com</a>
+        </p>
       </div>
     </div>
   );
