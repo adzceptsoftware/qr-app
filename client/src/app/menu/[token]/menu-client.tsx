@@ -206,6 +206,10 @@ export function MenuClient({
         order={trackedOrder}
         tableNumber={tableNumber}
         onOrderMore={() => setTrackerOpen(false)}
+        onClose={() => {
+          setTrackerOpen(false);
+          setNav("home");
+        }}
       />
     );
   }
@@ -348,7 +352,6 @@ export function MenuClient({
       {orderId && !showCart && (
         <OrderStatusBanner
           order={trackedOrder}
-          onOpen={() => setTrackerOpen(true)}
           onDismiss={() => setOrderId(null)}
         />
       )}

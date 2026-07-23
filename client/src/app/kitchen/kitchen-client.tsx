@@ -38,16 +38,21 @@ export function KitchenClient({ initialOrders, restaurantName }: { initialOrders
   useEffect(() => {
     const poll = setInterval(async () => {
       try {
-        const res = await fetch("/api/orders");
+        const res = await fetch("/api/orders", { cache: "no-store" });
         if (res.ok) {
           const next = (await res.json()) as OrderDTO[];
           const isNew = next.some((o) => o.status === "RECEIVED" && !seenIds.current.has(o.id));
           // Track every id, not just the new ones, so an order that arrives
           // already past RECEIVED can't ring later.
           for (const o of next) seenIds.current.add(o.id);
-          if (isNew) playChime();
           setOrders(next);
           setPollError(false);
+          if (isNew) playChime();
+        } else if (res.status === 401) {
+          // The backend token (12h) outlives the login cookie check — once it
+          // expires every poll 401s and the display silently freezes. Send
+          // staff back through login so a fresh token is minted.
+          window.location.assign("/login?callbackUrl=%2Fkitchen");
         }
         else setPollError(true);
       } catch { setPollError(true); }
@@ -64,6 +69,10 @@ export function KitchenClient({ initialOrders, restaurantName }: { initialOrders
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next }),
     });
+    if (res.status === 401) {
+      window.location.assign("/login?callbackUrl=%2Fkitchen");
+      return;
+    }
     if (!res.ok) setOrders(snapshot);
   }
 

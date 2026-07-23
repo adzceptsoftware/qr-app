@@ -24,7 +24,9 @@ declare module "@auth/core/jwt" {
 }
 
 export const authConfig: NextAuthConfig = {
-  session: { strategy: "jwt" },
+  // maxAge matches the backend JWT (12h) — the cookie must not outlive the
+  // access token it carries, or API calls start silently failing with 401.
+  session: { strategy: "jwt", maxAge: 12 * 60 * 60 },
   pages: { signIn: "/login" },
   providers: [],
   callbacks: {

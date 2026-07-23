@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { KitchenClient } from "./kitchen-client";
@@ -21,10 +22,18 @@ export default async function KitchenPage() {
   const session = await auth();
   const token = session!.user.accessToken;
 
-  const [initialOrders, settings] = await Promise.all([
-    api<OrderDTO[]>("/orders", { token }),
-    api<Settings>("/restaurant/settings", { token }),
-  ]);
+  let initialOrders: OrderDTO[];
+  let settings: Settings;
+  try {
+    [initialOrders, settings] = await Promise.all([
+      api<OrderDTO[]>("/orders", { token }),
+      api<Settings>("/restaurant/settings", { token }),
+    ]);
+  } catch {
+    // The login cookie can outlive the 12h backend token — when the backend
+    // rejects it, send staff back through login instead of an error page.
+    redirect("/login?callbackUrl=%2Fkitchen");
+  }
 
   return <KitchenClient initialOrders={initialOrders} restaurantName={settings.name} />;
 }

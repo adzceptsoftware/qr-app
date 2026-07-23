@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { OrderStatus } from "@/lib/order-types";
 import { Button } from "@/components/ui/Button";
 
@@ -79,11 +79,13 @@ export function OrderTrackerScreen({
   order,
   tableNumber,
   onOrderMore,
+  onClose,
 }: {
   orderId: string;
   order: TrackedOrder | null;
   tableNumber: string;
   onOrderMore: () => void;
+  onClose: () => void;
 }) {
   const status = order?.status ?? "RECEIVED";
   const copy = COPY[status];
@@ -91,7 +93,15 @@ export function OrderTrackerScreen({
   const cancelled = status === "CANCELLED";
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-10 text-center">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-6 py-10 text-center">
+      <button
+        onClick={onClose}
+        aria-label="Close and return home"
+        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-xl leading-none text-muted shadow-sm hover:text-foreground"
+      >
+        ×
+      </button>
+
       <div
         className={`mb-5 flex h-16 w-16 items-center justify-center rounded-full text-2xl ${
           cancelled ? "bg-danger/10" : "bg-accent text-accent-foreground"
@@ -166,24 +176,47 @@ export function OrderTrackerScreen({
   );
 }
 
-/** Slim live-status strip shown while the diner keeps browsing. */
+/** How long a status message stays on screen before hiding itself. */
+const BANNER_TIMEOUT_MS = 10_000;
+
+/**
+ * Slim live-status strip shown while the diner keeps browsing. Each status
+ * change shows it for 10s, then it hides until the next update; once the
+ * order settles it dismisses itself entirely after the same delay.
+ */
 export function OrderStatusBanner({
   order,
-  onOpen,
   onDismiss,
 }: {
   order: TrackedOrder | null;
-  onOpen: () => void;
   onDismiss: () => void;
 }) {
   const status = order?.status ?? "RECEIVED";
   const copy = COPY[status];
   const settled = status === "SERVED" || status === "CANCELLED";
 
+  const [visible, setVisible] = useState(true);
+
+  // Kept in a ref so the timer isn't reset by the parent re-rendering (the
+  // poll ticks every 5s and recreates the callback each time).
+  const dismissRef = useRef(onDismiss);
+  dismissRef.current = onDismiss;
+
+  useEffect(() => {
+    setVisible(true);
+    const t = setTimeout(() => {
+      setVisible(false);
+      if (settled) dismissRef.current();
+    }, BANNER_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [status, settled, order?.id]);
+
+  if (!visible) return null;
+
   return (
     <div className="fixed inset-x-0 bottom-[68px] z-30 px-4">
       <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border bg-surface/95 px-4 py-2.5 shadow-lg backdrop-blur-md">
-        <button onClick={onOpen} className="flex flex-1 items-center gap-3 text-left">
+        <div className="flex flex-1 items-center gap-3 text-left">
           <span className="text-lg" aria-hidden>{copy.emoji}</span>
           <span className="min-w-0">
             <span className="block text-sm font-semibold text-foreground" aria-live="polite">
@@ -191,16 +224,14 @@ export function OrderStatusBanner({
             </span>
             <span className="block truncate text-xs text-muted">{copy.detail}</span>
           </span>
+        </div>
+        <button
+          onClick={() => (settled ? onDismiss() : setVisible(false))}
+          aria-label="Dismiss order status"
+          className="shrink-0 rounded-full px-2 py-1 text-lg leading-none text-muted hover:text-foreground"
+        >
+          ×
         </button>
-        {settled && (
-          <button
-            onClick={onDismiss}
-            aria-label="Dismiss order status"
-            className="shrink-0 rounded-full px-2 py-1 text-lg leading-none text-muted hover:text-foreground"
-          >
-            ×
-          </button>
-        )}
       </div>
     </div>
   );
